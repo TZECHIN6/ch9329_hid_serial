@@ -54,6 +54,7 @@ class SerialHIDController:
         self.connect()
 
     def connect(self):
+        """Establish the serial connection."""
         try:
             self.ser = serial.Serial(port=self.port, baudrate=self.baudrate)
         except serial.SerialException as e:
@@ -61,10 +62,24 @@ class SerialHIDController:
             self.ser = None
 
     def disconnect(self):
+        """Close the serial connection."""
         if self.ser and self.ser.is_open:
             self.ser.close()
 
     def send_frame(self, frame: Frame) -> bool:
+        """
+        1. Check the connection is ready or not.
+        2. Convert the data frame to bytes.
+        3. Send the serial data.
+        4. Check the sent serial data is complete or not.
+
+        Args:
+            frame (Frame): A complete data frame object
+            constructed by the dataclass Frame.
+
+        Returns:
+            bool: Check if the serial data is sent successfully or not.
+        """
         if not self.ser or not self.ser.is_open:
             print("Serial port is not oepn. Cannot send data frame.")
             return False
@@ -80,6 +95,9 @@ class SerialHIDController:
             return False
 
     def volume_up(self):
+        """First send a serial frame to press volume up key,
+        then send a serial frame to release all key.
+        """
         frame = Frame(
             property="HID_MKEY", hid_data=[0xE9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
         )
@@ -90,6 +108,9 @@ class SerialHIDController:
         self.send_frame(frame)
 
     def volume_down(self):
+        """First send a serial frame to press volume down key,
+        then send a serial frame to release all key.
+        """
         frame = Frame(
             property="HID_MKEY", hid_data=[0xEA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
         )

@@ -44,7 +44,7 @@ class Frame:
         except KeyError:
             raise ValueError(f"Invalid property name: {property_name}")
 
-    def to_bytes(self) -> bytes:
+    def frame_to_bytes(self) -> bytes:
         frame = [self.HEADER, self.data_length, self.crc, self.property] + self.hid_data
         return bytes(frame)
 
@@ -63,6 +63,7 @@ class SerialHIDController:
         except serial.SerialException as e:
             print(f"Failed to open serial port {self.port}: {e}")
             self.ser = None
+            exit()
 
     def disconnect(self):
         """Close the serial connection."""
@@ -86,7 +87,7 @@ class SerialHIDController:
         if not self.ser or not self.ser.is_open:
             print("Serial port is not oepn. Cannot send data frame.")
             return False
-        frame_byte = frame.to_bytes()
+        frame_byte = frame.frame_to_bytes()
         try:
             bytes_written = self.ser.write(frame_byte)
             if bytes_written != len(frame_byte):

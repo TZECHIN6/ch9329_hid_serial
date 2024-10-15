@@ -7,12 +7,15 @@ import time
 
 PORT = "/dev/ttyUSB0"
 BAUDRATE = 38400
+SCREEN_X_MAX = 1920  # target screen x-resolution
+SCREEN_Y_MAX = 1200  # target screen y-resolutoin
 
 
 class HIDProperty(Enum):
     HID_KEY = 0x01
     HID_MKEY = 0x02
     HID_MOUSE = 0x05
+    HID_ABSMOUSE = 0x06
 
 
 @dataclass
@@ -117,6 +120,64 @@ class SerialHIDController:
         self.send_frame(frame)
         frame = Frame(
             property="HID_MKEY", hid_data=[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        )
+        self.send_frame(frame)
+
+    def move_relative(self, dx: int, dy: int):
+        """
+        Move the mouse to a given relative position.
+
+        [INFO] A positive value (0 to 127) represents forward/right movement.
+        A negative value (-1 to -128) represents backward/left movement,
+        but in the byte form it goes from 255 down to 128.
+
+        [WARN] Relative movement in one direction greater than 127 would result
+        in your movement being incorrectly interpreted.
+
+        Args:
+            dx (int): Relative x position
+            dy (int): Relative y position
+        """
+        if dx < 0:
+            dx = 256 + dx
+        if dy < 0:
+            dy = 256 + dy
+        frame = Frame(
+            property="HID_MOUSE",
+            hid_data=[0x00, 0x00, dx, dy, 0x00, 0x00, 0x00],
+        )
+        self.send_frame(frame)
+
+    def move_absolute(self, x: int, y: int):
+        """
+        Move the mouse to a given absolute position.
+        [INFO] 4096: The maximum value for a 12-bit integer (0-4095),
+        which is typically used in HID absolute positioning.
+        [WARN] This function might only work in Windows OS.
+
+        Args:
+            x (int): Desired absolute x position
+            y (int): Desired absolute y position
+        """
+        x = (4096 * x) // SCREEN_X_MAX
+        y = (4096 * y) // SCREEN_Y_MAX
+        x_bytes: bytes = x.to_bytes(2, "little")
+        y_bytes: bytes = y.to_bytes(2, "little")
+        frame = Frame(
+            property="HID_ABSMOUSE",
+            hid_data=[0x00, 0x00, x_bytes[0], x_bytes[1], y_bytes[0], y_bytes[1], 0x00],
+        )
+        self.send_frame(frame)
+
+    def mouse_press(self):
+        frame = Frame(
+            property="HID_MOUSE", hid_data=[0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        )
+        self.send_frame(frame)
+
+    def mouse_release(self):
+        frame = Frame(
+            property="HID_MOUSE", hid_data=[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
         )
         self.send_frame(frame)
 

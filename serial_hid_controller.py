@@ -109,10 +109,7 @@ class SerialHIDController:
             property="HID_MKEY", hid_data=[0xE9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
         )
         self.send_frame(frame)
-        frame = Frame(
-            property="HID_MKEY", hid_data=[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-        )
-        self.send_frame(frame)
+        self.hid_release("HID_MKEY")
 
     def volume_down(self):
         """
@@ -125,10 +122,31 @@ class SerialHIDController:
             property="HID_MKEY", hid_data=[0xEA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
         )
         self.send_frame(frame)
+        self.hid_release("HID_MKEY")
+
+    def next_slide(self):
+        """
+        First send a serial frame to press right arrow key,
+        then send a serial frame to release all key.
+        """
         frame = Frame(
-            property="HID_MKEY", hid_data=[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+            property="HID_KEY",
+            hid_data=[0x00, 0x00, 0x4F, 0x00, 0x00, 0x00, 0x00, 0x00],
         )
         self.send_frame(frame)
+        self.hid_release("HID_KEY")
+
+    def previous_slide(self):
+        """
+        First send a serial frame to press left arrow key,
+        then send a serial frame to release all key.
+        """
+        frame = Frame(
+            property="HID_KEY",
+            hid_data=[0x00, 0x00, 0x50, 0x00, 0x00, 0x00, 0x00, 0x00],
+        )
+        self.send_frame(frame)
+        self.hid_release("HID_KEY")
 
     def move_relative(self, dx: int, dy: int):
         """
@@ -145,6 +163,11 @@ class SerialHIDController:
             dx (int): Relative x position
             dy (int): Relative y position
         """
+        if (dx > 127 or dx < -128) or (dy > 127 or dy < -128):
+            print(
+                "The required relative movement is out of range. No HID command will be sent."
+            )
+            return
         if dx < 0:
             dx = 256 + dx
         if dy < 0:
@@ -185,11 +208,43 @@ class SerialHIDController:
         )
         self.send_frame(frame)
 
-    def mouse_release(self):
-        frame = Frame(
-            property="HID_MOUSE", hid_data=[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-        )
-        self.send_frame(frame)
+    def mouse_click(self):
+        """
+        First send a serial frame to press mouse left button,
+        then send a serial frame to release all mouse button.
+        """
+        self.mouse_press()
+        self.hid_release("HID_MOUSE")
+
+    def hid_release(self, hid_type: str):
+        """To release all the pressed key/button of the given HID device.
+
+        Args:
+            hid_type (str): The type of the desired HID device to perform release.
+            Only below listed arguments are accepted.
+            1. HID_KEY
+            2. HID_MKEY
+            3. HID_MOUSE
+        """
+        if hid_type == "HID_KEY":
+            frame = Frame(
+                property="HID_KEY",
+                hid_data=[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+            )
+            self.send_frame(frame)
+        elif hid_type == "HID_MKEY":
+            frame = Frame(
+                property="HID_MKEY", hid_data=[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+            )
+            self.send_frame(frame)
+        elif hid_type == "HID_MOUSE":
+            frame = Frame(
+                property="HID_MOUSE",
+                hid_data=[0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+            )
+            self.send_frame(frame)
+        else:
+            print("Invalid HID type. No release action is sent.")
 
 
 # Example

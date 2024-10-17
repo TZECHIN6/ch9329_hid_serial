@@ -7,6 +7,16 @@ pip3 install -r requirements.txt
 ```
 
 ## Usage
+1. Connect the bigger USB socket to host PC (send command), and connect the smaller USB socket to client PC (receive command).
+2. Make sure the com port is available. (might require sudo premission)
+
+```
+# Linux (example)
+$ sudo chmod 666 /dev/ttyUSB0
+```
+
+3. Update the config parameters so that it fits to your system.
+4. Import the module and use it :wink:.
 ```
 from ch9329_hid_serial.serial_hid_controller import SerialHIDController
 

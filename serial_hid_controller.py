@@ -5,7 +5,7 @@ from enum import Enum
 import time
 
 
-PORT = "/dev/ttyUSB0"
+PORT = "/dev/ttyUSB0"  # CH9329 USB device
 BAUDRATE = 38400
 SCREEN_X_MAX = 1920  # target screen x-resolution
 SCREEN_Y_MAX = 1200  # target screen y-resolutoin
@@ -99,8 +99,11 @@ class SerialHIDController:
             return False
 
     def volume_up(self):
-        """First send a serial frame to press volume up key,
+        """
+        First send a serial frame to press volume up key,
         then send a serial frame to release all key.
+
+        [INFO] Each execution increase the volume by 2.
         """
         frame = Frame(
             property="HID_MKEY", hid_data=[0xE9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
@@ -112,8 +115,11 @@ class SerialHIDController:
         self.send_frame(frame)
 
     def volume_down(self):
-        """First send a serial frame to press volume down key,
+        """
+        First send a serial frame to press volume down key,
         then send a serial frame to release all key.
+
+        [INFO] Each execution decrease the volume by 2.
         """
         frame = Frame(
             property="HID_MKEY", hid_data=[0xEA, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
@@ -152,8 +158,10 @@ class SerialHIDController:
     def move_absolute(self, x: int, y: int):
         """
         Move the mouse to a given absolute position.
+
         [INFO] 4096: The maximum value for a 12-bit integer (0-4095),
         which is typically used in HID absolute positioning.
+
         [WARN] This function might only work in Windows OS.
 
         Args:
@@ -171,6 +179,7 @@ class SerialHIDController:
         self.send_frame(frame)
 
     def mouse_press(self):
+        """Perform pressing left mouse button."""
         frame = Frame(
             property="HID_MOUSE", hid_data=[0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
         )
@@ -183,11 +192,12 @@ class SerialHIDController:
         self.send_frame(frame)
 
 
+# Example
 serController = SerialHIDController(PORT, BAUDRATE)
-for i in range(10):
-    serController.volume_up()
-    time.sleep(1 / 30)
-for i in range(10):
+for i in range(5):
     serController.volume_down()
-    time.sleep(1 / 30)
+    time.sleep(0.5)
+for i in range(5):
+    serController.volume_up()
+    time.sleep(0.5)
 serController.disconnect()

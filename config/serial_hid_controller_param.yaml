@@ -1,0 +1,7 @@
+serial:
+  port: "/dev/ttyUSB0"
+  baudrate: 38400
+  timeout: 1.0
+target_screen_resolution:
+  x_max: 1920
+  y_max: 1200

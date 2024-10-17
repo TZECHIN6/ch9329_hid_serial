@@ -1,14 +1,11 @@
+import os
 import serial
+import yaml
 from dataclasses import dataclass, field
 from typing import List
 from enum import Enum
+
 import time
-
-
-PORT = "/dev/ttyUSB0"  # CH9329 USB device
-BAUDRATE = 38400
-SCREEN_X_MAX = 1920  # target screen x-resolution
-SCREEN_Y_MAX = 1200  # target screen y-resolutoin
 
 
 class HIDProperty(Enum):
@@ -50,16 +47,43 @@ class Frame:
 
 
 class SerialHIDController:
-    def __init__(self, port: str, baudrate: int):
-        self.port = port
-        self.baudrate = baudrate
+    def __init__(self):
         self.ser = None
+        self.load_config()
         self.connect()
+        self.display_info()
+
+    def load_config(self):
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(
+            current_dir, "config", "serial_hid_controller_param.yaml"
+        )
+        with open(config_path, "r") as file:
+            config = yaml.safe_load(file)
+        self.port: str = config["serial"]["port"]
+        self.baudrate: int = config["serial"]["baudrate"]
+        self.timeout: float = config["serial"]["timeout"]
+        self.screen_x_max: int = config["target_screen_resolution"]["x_max"]
+        self.screen_y_max: int = config["target_screen_resolution"]["y_max"]
+
+    def display_info(self):
+        info = (
+            "---------------------------------------------\n"
+            "Successfully Established Serial Communication\n\n"
+            "Port:                     {self.port}\n"
+            "Baudrate:                 {self.baudrate}\n"
+            "Timeout:                  {self.timeout}\n"
+            "Target Screen Resolution: {self.screen_x_max} x {self.screen_y_max}\n"
+            "---------------------------------------------"
+        )
+        print(info.format(self=self))
 
     def connect(self):
         """Establish the serial connection."""
         try:
-            self.ser = serial.Serial(port=self.port, baudrate=self.baudrate)
+            self.ser = serial.Serial(
+                port=self.port, baudrate=self.baudrate, timeout=self.timeout
+            )
         except serial.SerialException as e:
             print(f"Failed to open serial port {self.port}: {e}")
             self.ser = None
@@ -191,8 +215,8 @@ class SerialHIDController:
             x (int): Desired absolute x position
             y (int): Desired absolute y position
         """
-        x = (4096 * x) // SCREEN_X_MAX
-        y = (4096 * y) // SCREEN_Y_MAX
+        x = (4096 * x) // self.screen_x_max
+        y = (4096 * y) // self.screen_y_max
         x_bytes: bytes = x.to_bytes(2, "little")
         y_bytes: bytes = y.to_bytes(2, "little")
         frame = Frame(
@@ -247,12 +271,16 @@ class SerialHIDController:
             print("Invalid HID type. No release action is sent.")
 
 
-# Example
-serController = SerialHIDController(PORT, BAUDRATE)
-for i in range(5):
-    serController.volume_down()
-    time.sleep(0.5)
-for i in range(5):
-    serController.volume_up()
-    time.sleep(0.5)
-serController.disconnect()
+def main():
+    serController = SerialHIDController()
+    for _ in range(5):
+        serController.volume_down()
+        time.sleep(0.5)
+    for _ in range(5):
+        serController.volume_up()
+        time.sleep(0.5)
+    serController.disconnect()
+
+
+if __name__ == "__main__":
+    main()

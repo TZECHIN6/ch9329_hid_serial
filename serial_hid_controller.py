@@ -217,6 +217,8 @@ class SerialHIDController:
         """
         x = (4096 * x) // self.screen_x_max
         y = (4096 * y) // self.screen_y_max
+        x = int(x)
+        y = int(y)
         x_bytes: bytes = x.to_bytes(2, "little")
         y_bytes: bytes = y.to_bytes(2, "little")
         frame = Frame(
